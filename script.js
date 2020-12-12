@@ -19,7 +19,6 @@ let progressListArray = [];
 let completeListArray = [];
 let onHoldListArray = [];
 
-let draggedItem, currentColumn;
 const listArrays = [
     backlogListArray,
     progressListArray,
@@ -57,15 +56,15 @@ function createItemEl(columnEl, column, item, index) {
     listEl.draggable = true;
     listEl.setAttribute("ondragstart", "drag(event)");
     listEl.contentEditable = "true";
-    listEl.id = `item_${column}_${index}`;
+    listEl.id = `item_${column}_${index}`; // Unique id for EVERY element is must be here.
     listEl.addEventListener("focusout", (e) => {
         const editedItem = e.target;
 
         if (editedItem.textContent === "") {
             editedItem.parentNode.removeChild(editedItem);
-            listArrays[column].splice(index, 1); // when item is dragged from and dropped to, its losing focus
+            listArrays[column].splice(index, 1);
         }
-
+        // when item is dragged and dropped, its firing the same event "focusout"
         updateArrays();
         saveColumns();
     });
@@ -79,7 +78,8 @@ function updateDOM() {
     if (!updatedOnLoad) {
         getSavedColumns();
     }
-    // remove all childs li fronm DOM columns, and re-create all of them based on data in arrays
+    updatedOnLoad = true;
+    // remove all childs <li ></li> from DOM columns, and re-create all of them based on data in arrays
     listArrays.forEach((arrItem, arrI) => {
         columns[arrI].textContent = "";
         arrItem.forEach((item, i) => {
@@ -90,8 +90,8 @@ function updateDOM() {
 
 // When item starts dragging
 function drag(e) {
-    //draggedItem = e.target;
-    e.dataTransfer.setData("text", e.target.id);
+    //draggedItem = e.target; No need for a global variable here
+    e.dataTransfer.setData("text", e.target.id); // set data in drag and drop event to dragged element's id
 }
 
 // Col allows for item to drop
@@ -106,25 +106,19 @@ function dragEnter(columnIndex) {
         column.classList.remove("over");
     });
     columns[columnIndex].classList.add("over");
-    currentColumn = columnIndex;
+    // no need for global columnIndex variable :)
 }
 
 //On drop
 
 function drop(e) {
     e.preventDefault();
+    // getr data(id of dragged element) from drag-and-drop data
     const data = e.dataTransfer.getData("text");
-    //const parentUlNode = e.target;
-    //console.log(typeof(parentUlNode));
-    //console.log("Parent node:", parentUlNode);
-    //console.log(typeof(draggedItem));
+
     // Add item to column
-    //const parent = columns[currentColumn];
-    console.log("Element: ", document.getElementById(data));
-    console.log("target: ", e.target);
     e.target.appendChild(document.getElementById(data));
 
-    //columns[currentColumn].appendChild(draggedItem);
     // unhighlight column when item is dropped
     e.target.classList.remove("over");
 
@@ -142,9 +136,6 @@ function updateArrays() {
             listArrays[index].push(columns[index].children[i].textContent);
         }
     });
-
-    updatedOnLoad = true;
-    //updateDOM();
 }
 
 function addToColumn(column) {
