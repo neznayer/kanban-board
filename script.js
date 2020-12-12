@@ -18,6 +18,8 @@ let backlogListArray = [];
 let progressListArray = [];
 let completeListArray = [];
 let onHoldListArray = [];
+let mouseIsDown = false;
+let dragging = false;
 
 const listArrays = [
     backlogListArray,
@@ -55,19 +57,27 @@ function createItemEl(columnEl, column, item, index) {
     listEl.textContent = item;
     listEl.draggable = true;
     listEl.setAttribute("ondragstart", "drag(event)");
-    listEl.contentEditable = "true";
+    //listEl.contentEditable = "true";
     listEl.id = `item_${column}_${index}`; // Unique id for EVERY element is must be here.
+
+    // Edit item by clicking on it, not by focusing bcuz its interferes with drag and drop UX
+    listEl.addEventListener("click", (e) => {
+        e.target.contentEditable = "true";
+        e.target.focus();
+    });
     listEl.addEventListener("focusout", (e) => {
         const editedItem = e.target;
 
         if (editedItem.textContent === "") {
-            editedItem.parentNode.removeChild(editedItem);
-            listArrays[column].splice(index, 1);
+            editedItem.parentNode.removeChild(editedItem); // remove child node
+            listArrays[column].splice(index, 1); // remove accordind element from array
         }
+        e.target.contentEditable = "false";
         // when item is dragged and dropped, its firing the same event "focusout"
         updateArrays();
         saveColumns();
     });
+
     //Append
     columnEl.appendChild(listEl);
 }
@@ -92,6 +102,7 @@ function updateDOM() {
 function drag(e) {
     //draggedItem = e.target; No need for a global variable here
     e.dataTransfer.setData("text", e.target.id); // set data in drag and drop event to dragged element's id
+    dragging = true;
 }
 
 // Col allows for item to drop
@@ -117,24 +128,27 @@ function drop(e) {
     const data = e.dataTransfer.getData("text");
 
     // Add item to column
-    e.target.appendChild(document.getElementById(data));
+    if (e.target.classList.contains("drag-item-list")) {
+        e.target.appendChild(document.getElementById(data));
 
-    // unhighlight column when item is dropped
-    e.target.classList.remove("over");
+        // unhighlight column when item is dropped
+        e.target.classList.remove("over");
 
-    updateArrays();
-    saveColumns();
+        updateArrays();
+        saveColumns();
+    } else {
+        console.log("outside drop!");
+    }
+    dragging = false;
 }
 
 // Allow arrays to reflect changes
 function updateArrays() {
     // Update arrays from DOM element's textContent
     listArrays.forEach((arrItem, index) => {
-        listArrays[index] = [];
-
-        for (let i = 0; i < columns[index].children.length; i++) {
-            listArrays[index].push(columns[index].children[i].textContent);
-        }
+        listArrays[index] = [...columns[index].children].map(
+            (i) => i.textContent
+        );
     });
 }
 
